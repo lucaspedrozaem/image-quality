@@ -4,10 +4,11 @@
 import os
 from flask import Flask, request, jsonify
 from evaluater.predict import image_file_to_json, image_dir_to_json, predict
+from utils.utils import calc_mean_score, save_json
 import urllib
 import shutil
 import argparse
-from keras import backend as K
+from tensorflow.python.keras import backend as K
 from PIL import ImageFile, Image
 from handlers.model_builder import Nima
 from handlers.data_generator import TestDataGenerator
@@ -49,6 +50,9 @@ def main(image_source, predictions_file, img_format='jpg'):
         save_json(samples, predictions_file)
 
     return samples
+@app.route('/')
+def home():
+    return "Welcome to Tripsee API"
 
 @app.route('/prediction', methods=['POST'])
 def prediction():
@@ -59,17 +63,21 @@ def prediction():
         images = request.json
 
         if images:
+            try:
+                shutil.rmtree('tempcurate')
+            except:
+                print("folder didn't exist")
 
-            shutil.rmtree('temp')
-            os.mkdir('temp')
+            os.mkdir('tempcurate')
             for image in images:
                 filename_w_ext = os.path.basename(image)
+                print(filename_w_ext)
                 try:
-                    urllib.request.urlretrieve(image, 'temp/'+ filename_w_ext)
+                    urllib.request.urlretrieve(image, 'tempcurate/'+ filename_w_ext)
                 except:
                     print('An exception occurred :' + image)
 
-            result = main('temp', None)
+            result = main('tempcurate', None)
 
             return jsonify(result)
 
@@ -83,4 +91,4 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     load_model(args)
-    app.run(host='0.0.0.0', port=5005)
+    app.run(host='0.0.0.0')
